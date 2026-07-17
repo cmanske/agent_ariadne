@@ -32,7 +32,7 @@ your project — see below.
 **Recommended — clone and inspect before running anything:**
  
 ```bash
-git clone --depth 1 https://github.com/<you>/ariadne.git .ariadne_setup
+git clone --depth 1 https://github.com/cmanske/agent_ariadne.git .ariadne_setup
 cp .ariadne_setup/agent_ariadne.py ./.ariadne/agent_ariadne.py
 rm -rf .ariadne_setup
 ```
@@ -40,7 +40,7 @@ rm -rf .ariadne_setup
 **Fast path** (also supported, once `install.sh` ships in Phase 3):
  
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<you>/ariadne/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/cmanske/agent_ariadne/main/install.sh | bash
 ```
  
 Either way, nothing stays dependent on this repo afterward — it's a one-time

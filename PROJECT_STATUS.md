@@ -130,6 +130,14 @@
 
 > Reverse chronological. Never edit existing entries.
 
+- **2026-07-16** - Repo name locked to `agent_ariadne` and published at
+  https://github.com/cmanske/agent_ariadne. Considered `agent-ariadne`
+  (dash form, GitHub-conventional) vs the underscore form actually used;
+  underscore won because the published local directory and the Python
+  module/file (`agent_ariadne.py`) both use it, so keeping one consistent
+  slug across repo name, clone path, and importable filename was worth the
+  minor deviation from GitHub's dash-leaning norm. README and INSTRUCTIONS
+  install snippets updated to the real URLs.
 - **2026-07-15** - ARCHITECTURE.md and INSTRUCTIONS.md were missing from
   the initial handoff despite being logged as created; Pi created both
   from scratch on 2026-07-15, grounded in the actual code.
@@ -168,8 +176,6 @@
 
 > Move to Recent decisions when resolved.
 
-- [ ] Final repo name (ariadne vs. agent-ariadne vs. ariadne-cli) not
-  yet locked in.
 - [ ] Exact wording/scope of the Codex and OpenCode adapters is a best-effort
   design based on current docs (checked 2026-07-14) - worth re-verifying
   against each platform's docs at Phase 3 build time in case anything shifted.
