@@ -152,6 +152,20 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# OS cruft (not covered by the Python template)
+.DS_Store
+Thumbs.db
+
+# Editor cruft (only skip this if you don't want to share workspace settings)
+.vscode/
+.idea/
+
+# Scratch test projects created while developing Ariadne itself
+# (once Phase 2 has a real test suite, this keeps throwaway fixture
+# projects out of git without touching real test code)
+/test_output/
+/*_scratch/
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

@@ -1,3 +1,20 @@
+# ========================================================================================
+# ARIADNE HEADER — DO NOT EDIT MANUALLY
+#
+#  File:      agent_ariadne.py
+#  Last Edit: 2026-07-16
+#  Checksum:  a0259f85
+# ========================================================================================
+#
+#  <<LLM: 1-3 sentences — what this file does and its role in the project>>
+#  The single stdlib-only deterministic core of Ariadne. Parses the
+#  ALL-CAPS markdown project-state files, scaffolds them (init), injects
+#  and checksums source-file headers (annotate), rebuilds CODE_INDEX.md,
+#  and reports status / validates well-formedness plus template residue
+#  (status, validate, config). Every other agent layer is a thin adapter
+#  over this.
+#
+# END ARIADNE HEADER
 #!/usr/bin/env python3
 """
 agent_ariadne.py — deterministic project-governance CLI for Ariadne.
@@ -839,8 +856,8 @@ def cmd_annotate(args: argparse.Namespace) -> int:
     print("CODE_INDEX.md rebuilt.")
     print()
     print("NOTE: directory-structure changes should also trigger an ARCHITECTURE.md")
-    print("regeneration -- that step is agent-driven (diagram/interface prose), not")
-    print("yet wired into this command. See PROJECT_AGENT_SPEC.md section 7.")
+    print("regeneration -- that step is agent-driven (diagram/interface prose),")
+    print("not yet wired into this command.")
     return 0
 
 
@@ -1027,6 +1044,38 @@ def validate_project_config(content: str) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+# Detects the managed-markdown scaffold castle placeholder convention,
+# `{{...}}` (including the nested `{{<<LLM: ... >>}}` form used in spec
+# sheets). This is distinct from the source-file annotation convention
+# `<<LLM: ... >>`, which lives inside injected headers in source files and
+# is handled by the annotation workflow, not this check.
+TEMPLATE_RESIDUE_RE = re.compile(r"\{\{.*?\}\}")
+
+
+def validate_template_residue(content: str) -> tuple[list[str], list[str]]:
+    """Flag any `{{...}}` scaffold placeholder remaining in a managed file.
+
+    Line-by-line scan (no re.DOTALL) so only single-line placeholders are
+    matched -- every placeholder the init templates actually emit is on one
+    line, and this avoids accidentally matching a stray `{{` in a code
+    block against the next `}}` three paragraphs later. Residue is an error,
+    not a warning: a file that still carries template prose is not finished,
+    and the clarifying -> in_progress gate (P2_T2) will build on this.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    for i, line in enumerate(content.split("\n"), start=1):
+        for m in TEMPLATE_RESIDUE_RE.finditer(line):
+            excerpt = m.group(0)
+            if len(excerpt) > 60:
+                excerpt = excerpt[:57] + "..."
+            errors.append(
+                f"line {i}: template residue -- replace this {excerpt} "
+                "placeholder with real prose before continuing"
+            )
+    return errors, warnings
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     cwd = Path(args.path).resolve()
     total_errors = 0
@@ -1038,12 +1087,33 @@ def cmd_validate(args: argparse.Namespace) -> int:
     print("\u2501" * 50)
     print()
 
-    checks = {
+    # Per-file specific validators. These check structural rules unique to
+    # that one managed file (e.g. checklist markers in STATUS, enum values
+    # in CONFIG). Run first; their errors/warnings merge with the
+    # cross-cutting residue check below.
+    specific_checks = {
         "PROJECT_STATUS.md": validate_project_status,
         "PROJECT_CONFIG.md": validate_project_config,
     }
 
-    for filename, validator in checks.items():
+    # Template-residue check runs across every managed markdown file as a
+    # cross-cutting layer, in addition to any specific validator: any
+    # `{{...}}` scaffold placeholder left over from init means the file's
+    # prose hasn't actually been written yet. (README.md and INSTRUCTIONS.md
+    # are included: the init templates emit `{{...}}` in them too.)
+    # Build the per-file validator list: specific checks layered with
+    # the cross-cutting residue check. Order: file-specific first, then
+    # residue, so errors attributable to a known structural rule surface
+    # before the generic "finish the prose" errors.
+    checks: dict[str, list] = {}
+    for filename in MANAGED_FILES:
+        validators = []
+        if filename in specific_checks:
+            validators.append(specific_checks[filename])
+        validators.append(validate_template_residue)
+        checks[filename] = validators
+
+    for filename, validators in checks.items():
         path = cwd / filename
         content = read_if_exists(path)
         print(filename)
@@ -1053,7 +1123,13 @@ def cmd_validate(args: argparse.Namespace) -> int:
             print()
             continue
 
-        errors, warnings = validator(content)
+        errors: list[str] = []
+        warnings: list[str] = []
+        for validator in validators:
+            v_errors, v_warnings = validator(content)
+            errors.extend(v_errors)
+            warnings.extend(v_warnings)
+
         schema = read_schema_version(content)
         if filename in VERSIONED_FILES and schema is None:
             warnings.append("no schema version tag found")
